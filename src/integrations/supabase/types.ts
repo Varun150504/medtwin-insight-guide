@@ -14,7 +14,170 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      health_sessions: {
+        Row: {
+          condition: string | null
+          created_at: string
+          explanation: Json | null
+          followup_answers: Json | null
+          followup_questions: Json | null
+          id: string
+          reasoning: string | null
+          recommended_action: string | null
+          risk_level: string | null
+          status: string
+          symptom_description: string | null
+          symptoms: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          condition?: string | null
+          created_at?: string
+          explanation?: Json | null
+          followup_answers?: Json | null
+          followup_questions?: Json | null
+          id?: string
+          reasoning?: string | null
+          recommended_action?: string | null
+          risk_level?: string | null
+          status?: string
+          symptom_description?: string | null
+          symptoms: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          condition?: string | null
+          created_at?: string
+          explanation?: Json | null
+          followup_answers?: Json | null
+          followup_questions?: Json | null
+          id?: string
+          reasoning?: string | null
+          recommended_action?: string | null
+          risk_level?: string | null
+          status?: string
+          symptom_description?: string | null
+          symptoms?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      health_timeline: {
+        Row: {
+          created_at: string
+          description: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          session_id: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          session_id?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          session_id?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_timeline_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "health_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medical_reports: {
+        Row: {
+          created_at: string
+          extracted_text: string | null
+          file_url: string | null
+          id: string
+          report_name: string
+          report_type: string | null
+          structured_data: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          extracted_text?: string | null
+          file_url?: string | null
+          id?: string
+          report_name: string
+          report_type?: string | null
+          structured_data?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          extracted_text?: string | null
+          file_url?: string | null
+          id?: string
+          report_name?: string
+          report_type?: string | null
+          structured_data?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          age: number | null
+          allergies: string[] | null
+          blood_type: string | null
+          chronic_conditions: string[] | null
+          created_at: string
+          display_name: string | null
+          emergency_contacts: Json | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age?: number | null
+          allergies?: string[] | null
+          blood_type?: string | null
+          chronic_conditions?: string[] | null
+          created_at?: string
+          display_name?: string | null
+          emergency_contacts?: Json | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age?: number | null
+          allergies?: string[] | null
+          blood_type?: string | null
+          chronic_conditions?: string[] | null
+          created_at?: string
+          display_name?: string | null
+          emergency_contacts?: Json | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
