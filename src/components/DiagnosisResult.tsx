@@ -1,38 +1,56 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RiskBadge } from "@/components/RiskBadge";
-import { AlertTriangle, HelpCircle, Hospital, Phone, RefreshCw, ChevronDown, ChevronUp, Lightbulb, Shield } from "lucide-react";
+import { RiskBadge, RiskScoreBar } from "@/components/RiskBadge";
+import { AlertTriangle, HelpCircle, Hospital, Phone, RefreshCw, ChevronDown, ChevronUp, Lightbulb, Shield, TrendingUp, FileText, MapPin, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface AnalysisResult {
-  condition: string;
-  risk_level: string;
-  reasoning: string;
-  recommended_action: string;
-  explanation: {
-    key_triggers: string[];
-    history_influence: string;
-    reasoning_logic: string;
-  };
-}
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import type { AnalysisResult } from "@/hooks/useHealthSession";
 
 interface DiagnosisResultProps {
   result: AnalysisResult;
   onReset: () => void;
+  onSimulateDecision: () => Promise<{ decision: string; reason: string } | null>;
+  onGenerateReport: () => Promise<any | null>;
 }
 
-export function DiagnosisResult({ result, onReset }: DiagnosisResultProps) {
+export function DiagnosisResult({ result, onReset, onSimulateDecision, onGenerateReport }: DiagnosisResultProps) {
   const [showExplanation, setShowExplanation] = useState(false);
+  const [decisionModal, setDecisionModal] = useState(false);
+  const [decision, setDecision] = useState<{ decision: string; reason: string } | null>(null);
+  const [decisionLoading, setDecisionLoading] = useState(false);
+  const [reportModal, setReportModal] = useState(false);
+  const [clinicalReport, setClinicalReport] = useState<any>(null);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [showHospitals, setShowHospitals] = useState(false);
+
   const isCritical = result.risk_level === "critical" || result.risk_level === "high";
+
+  const handleDecision = async () => {
+    setDecisionModal(true);
+    setDecisionLoading(true);
+    const res = await onSimulateDecision();
+    setDecision(res);
+    setDecisionLoading(false);
+  };
+
+  const handleReport = async () => {
+    setReportModal(true);
+    setReportLoading(true);
+    const res = await onGenerateReport();
+    setClinicalReport(res);
+    setReportLoading(false);
+  };
+
+  const handleFindHospitals = () => {
+    setShowHospitals(true);
+    window.open("https://www.google.com/maps/search/hospitals+near+me", "_blank");
+  };
 
   return (
     <div className="space-y-4 animate-slide-up">
       {/* Main result card */}
-      <Card className={cn(
-        "shadow-elevated overflow-hidden",
-        isCritical && "border-critical/30 bg-critical/5"
-      )}>
+      <Card className={cn("shadow-elevated overflow-hidden", isCritical && "border-critical/30 bg-critical/5")}>
         {isCritical && (
           <div className="bg-critical px-4 py-2 flex items-center gap-2 text-critical-foreground text-sm font-medium">
             <AlertTriangle className="h-4 w-4" />
@@ -46,6 +64,9 @@ export function DiagnosisResult({ result, onReset }: DiagnosisResultProps) {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Risk Score Bar */}
+          <RiskScoreBar level={result.risk_level} score={result.risk_score} />
+
           <div>
             <p className="text-sm font-medium text-muted-foreground mb-1">Assessment</p>
             <p className="text-foreground">{result.reasoning}</p>
@@ -56,28 +77,42 @@ export function DiagnosisResult({ result, onReset }: DiagnosisResultProps) {
             </p>
             <p className="text-foreground">{result.recommended_action}</p>
           </div>
+
+          {/* Session Comparison Insight */}
+          {result.session_comparison?.has_previous && (
+            <div className="p-3 rounded-lg bg-info/5 border border-info/20 flex items-start gap-2">
+              <TrendingUp className="h-4 w-4 text-info mt-0.5 shrink-0" />
+              <div>
+                <p className="text-xs font-semibold text-info">What Changed?</p>
+                <p className="text-sm text-foreground">{result.session_comparison.insight}</p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Action buttons */}
       <div className="flex flex-wrap gap-2">
-        <Button
-          variant="outline"
-          onClick={() => setShowExplanation(!showExplanation)}
-          className="gap-2"
-        >
-          <HelpCircle className="h-4 w-4" />
-          Why this?
+        <Button variant="outline" onClick={() => setShowExplanation(!showExplanation)} className="gap-2">
+          <HelpCircle className="h-4 w-4" /> Why this?
           {showExplanation ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
         </Button>
-        {isCritical && (
-          <Button variant="emergency" className="gap-2">
-            <Phone className="h-4 w-4" /> Emergency Help
-          </Button>
-        )}
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" onClick={handleDecision} className="gap-2">
           <Hospital className="h-4 w-4" /> Should I go to hospital?
         </Button>
+        <Button variant="outline" onClick={handleReport} className="gap-2">
+          <FileText className="h-4 w-4" /> Clinical Report
+        </Button>
+        {isCritical && (
+          <>
+            <Button variant="emergency" className="gap-2" onClick={() => window.open("tel:911")}>
+              <Phone className="h-4 w-4" /> Emergency Help
+            </Button>
+            <Button variant="outline" onClick={handleFindHospitals} className="gap-2 border-critical/30 text-critical hover:bg-critical/5">
+              <MapPin className="h-4 w-4" /> Find Nearby Hospitals
+            </Button>
+          </>
+        )}
         <Button variant="ghost" onClick={onReset} className="gap-2 ml-auto">
           <RefreshCw className="h-4 w-4" /> New Analysis
         </Button>
@@ -95,9 +130,7 @@ export function DiagnosisResult({ result, onReset }: DiagnosisResultProps) {
             <div>
               <p className="font-medium text-muted-foreground">Key Triggers</p>
               <ul className="list-disc list-inside mt-1 space-y-0.5">
-                {result.explanation.key_triggers?.map((t, i) => (
-                  <li key={i}>{t}</li>
-                ))}
+                {result.explanation.key_triggers?.map((t, i) => <li key={i}>{t}</li>)}
               </ul>
             </div>
             <div>
@@ -111,6 +144,107 @@ export function DiagnosisResult({ result, onReset }: DiagnosisResultProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* Hospital Finder for high/critical */}
+      {isCritical && showHospitals && (
+        <Card className="shadow-card animate-fade-in border-critical/20">
+          <CardHeader>
+            <CardTitle className="font-display text-base flex items-center gap-2 text-critical">
+              <MapPin className="h-4 w-4" /> Nearby Hospitals
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <p className="text-sm text-muted-foreground mb-3">
+              Based on your risk level, we recommend visiting a hospital. A search has been opened in a new tab.
+            </p>
+            <Button variant="outline" onClick={() => window.open("https://www.google.com/maps/search/hospitals+near+me", "_blank")} className="w-full gap-2">
+              <MapPin className="h-4 w-4" /> Open Hospital Map
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Decision Simulation Modal */}
+      <Dialog open={decisionModal} onOpenChange={setDecisionModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display flex items-center gap-2">
+              <Hospital className="h-5 w-5 text-primary" /> Decision Simulation
+            </DialogTitle>
+          </DialogHeader>
+          {decisionLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <span className="ml-2 text-sm text-muted-foreground">AI is evaluating...</span>
+            </div>
+          ) : decision ? (
+            <div className="space-y-4">
+              <div className="p-4 rounded-lg bg-secondary/50 border border-secondary">
+                <p className="font-semibold text-lg">{decision.decision}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Reasoning</p>
+                <p className="text-sm">{decision.reason}</p>
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      {/* Clinical Report Modal */}
+      <Dialog open={reportModal} onOpenChange={setReportModal}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" /> Clinical Session Report
+            </DialogTitle>
+          </DialogHeader>
+          {reportLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <span className="ml-2 text-sm text-muted-foreground">Generating report...</span>
+            </div>
+          ) : clinicalReport ? (
+            <div className="space-y-4 text-sm">
+              <div>
+                <p className="font-medium text-muted-foreground">Patient Summary</p>
+                <p>{clinicalReport.patient_summary}</p>
+              </div>
+              <div>
+                <p className="font-medium text-muted-foreground">Presenting Symptoms</p>
+                <ul className="list-disc list-inside">
+                  {clinicalReport.presenting_symptoms?.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                </ul>
+              </div>
+              <div>
+                <p className="font-medium text-muted-foreground">Follow-Up Assessment</p>
+                <p>{clinicalReport.follow_up_assessment}</p>
+              </div>
+              <div>
+                <p className="font-medium text-muted-foreground">Diagnosis</p>
+                <p className="font-semibold">{clinicalReport.diagnosis}</p>
+              </div>
+              <div>
+                <p className="font-medium text-muted-foreground">Risk Assessment</p>
+                <p>{clinicalReport.risk_assessment}</p>
+              </div>
+              <div>
+                <p className="font-medium text-muted-foreground">Recommended Actions</p>
+                <ul className="list-disc list-inside">
+                  {clinicalReport.recommended_actions?.map((a: string, i: number) => <li key={i}>{a}</li>)}
+                </ul>
+              </div>
+              {clinicalReport.notes && (
+                <div>
+                  <p className="font-medium text-muted-foreground">Notes</p>
+                  <p>{clinicalReport.notes}</p>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground italic border-t pt-3">{clinicalReport.disclaimer}</p>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
