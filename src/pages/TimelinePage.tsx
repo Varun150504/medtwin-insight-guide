@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AuthPage } from "@/pages/AuthPage";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { RiskBadge } from "@/components/RiskBadge";
+import { RiskBadge, RiskScoreBar } from "@/components/RiskBadge";
 import { Clock, Activity, AlertTriangle, FileText, Stethoscope } from "lucide-react";
 import { format } from "date-fns";
 
@@ -56,7 +56,9 @@ export default function TimelinePage() {
           <div className="space-y-3">
             {events.map((event, i) => {
               const Icon = eventIcons[event.event_type] || Activity;
-              const riskLevel = (event.metadata as any)?.risk_level;
+              const meta = event.metadata as any;
+              const riskLevel = meta?.risk_level;
+              const riskScore = meta?.risk_score;
               return (
                 <Card key={event.id} className="shadow-card animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
                   <CardContent className="py-4 flex items-start gap-3">
@@ -68,6 +70,11 @@ export default function TimelinePage() {
                         <p className="font-medium text-sm">{event.title}</p>
                         {riskLevel && <RiskBadge level={riskLevel} />}
                       </div>
+                      {riskLevel && (
+                        <div className="mt-2 max-w-xs">
+                          <RiskScoreBar level={riskLevel} score={riskScore} />
+                        </div>
+                      )}
                       {event.description && (
                         <p className="text-muted-foreground text-xs mt-1 line-clamp-2">{event.description}</p>
                       )}

@@ -14,15 +14,11 @@ const AnalyzingState = () => (
     </div>
     <h3 className="font-display text-lg font-semibold mb-2">MedTwin AI is thinking...</h3>
     <p className="text-muted-foreground text-sm text-center max-w-md">
-      Analyzing your symptoms, medical history, and follow-up answers to provide a personalized diagnosis.
+      Analyzing your symptoms, medical history, reports, and follow-up answers to provide a personalized diagnosis.
     </p>
     <div className="flex gap-1 mt-4">
       {[0, 1, 2].map(i => (
-        <div
-          key={i}
-          className="h-2 w-2 rounded-full bg-primary animate-pulse-soft"
-          style={{ animationDelay: `${i * 200}ms` }}
-        />
+        <div key={i} className="h-2 w-2 rounded-full bg-primary animate-pulse-soft" style={{ animationDelay: `${i * 200}ms` }} />
       ))}
     </div>
   </div>
@@ -63,14 +59,21 @@ export default function Index() {
 }
 
 function SymptomAnalysisFlow() {
-  const { stage, questions, result, loading, submitSymptoms, submitAnswers, reset } = useHealthSession();
+  const { stage, questions, result, loading, submitSymptoms, submitAnswers, simulateDecision, generateClinicalReport, reset } = useHealthSession();
 
   return (
     <>
       {stage === "input" && <SymptomInput onSubmit={submitSymptoms} loading={loading} />}
       {stage === "answering" && <FollowUpQuestions questions={questions} onSubmit={submitAnswers} loading={loading} />}
       {stage === "analyzing" && <AnalyzingState />}
-      {stage === "complete" && result && <DiagnosisResult result={result} onReset={reset} />}
+      {stage === "complete" && result && (
+        <DiagnosisResult
+          result={result}
+          onReset={reset}
+          onSimulateDecision={simulateDecision}
+          onGenerateReport={generateClinicalReport}
+        />
+      )}
     </>
   );
 }
