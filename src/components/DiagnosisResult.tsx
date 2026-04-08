@@ -23,7 +23,7 @@ export function DiagnosisResult({ result, onReset, onSimulateDecision, onGenerat
   const [reportModal, setReportModal] = useState(false);
   const [clinicalReport, setClinicalReport] = useState<any>(null);
   const [reportLoading, setReportLoading] = useState(false);
-  const [showHospitals, setShowHospitals] = useState(false);
+  
 
   const isCritical = result.risk_level === "critical" || result.risk_level === "high";
 
