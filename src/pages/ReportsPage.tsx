@@ -53,6 +53,20 @@ export default function ReportsPage() {
     setUploading(true);
 
     try {
+      // Read file as base64 for AI processing
+      const fileBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          // Strip the data URL prefix to get raw base64
+          const base64 = result.split(",")[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      // Upload to storage
       const filePath = `${user.id}/${Date.now()}_${file.name}`;
       const { error: uploadError } = await supabase.storage
         .from("medical_reports")
@@ -64,21 +78,18 @@ export default function ReportsPage() {
         .from("medical_reports")
         .getPublicUrl(filePath);
 
-      // Simulate text extraction (in production would use OCR)
-      const extractedText = file.type === "application/pdf"
-        ? `[PDF Report: ${file.name}] Content extracted from uploaded medical report. File size: ${(file.size / 1024).toFixed(1)}KB.`
-        : `[Image Report: ${file.name}] Image-based medical report uploaded. File size: ${(file.size / 1024).toFixed(1)}KB.`;
-
-      // Send to AI for structured analysis
+      // Send actual file to AI for real extraction + analysis
       const { data: aiData, error: aiError } = await supabase.functions.invoke("medtwin-analyze", {
         body: {
           stage: "report-analyze",
-          reportText: extractedText,
+          fileBase64,
+          fileMimeType: file.type,
           reportName: file.name,
         },
       });
 
       const structuredData = aiError ? null : aiData;
+      const extractedText = structuredData?.extracted_text || `[Report: ${file.name}] AI extraction failed.`;
 
       // Save to database
       const { error: dbError } = await supabase.from("medical_reports").insert({

@@ -179,11 +179,83 @@ The patient asks: "Should I go to the hospital?"
 Provide your decision.`;
 
     } else if (stage === "report-analyze") {
+      // Use multimodal Gemini to read actual file content
+      const fileBase64 = body.fileBase64;
+      const fileMimeType = body.fileMimeType;
+
+      if (fileBase64 && fileMimeType) {
+        // Send actual file to Gemini via multimodal content parts
+        const multimodalResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+              {
+                role: "system",
+                content: `You are MedTwin AI's report analysis engine.
+Read the provided medical document (PDF or image) carefully and extract ALL medical data.
+
+Respond with a JSON object:
+{
+  "extracted_text": "Full text content extracted from the document",
+  "conditions_detected": ["list of conditions or findings"],
+  "key_metrics": {
+    "blood_pressure": "value or empty string",
+    "sugar_level": "value or empty string",
+    "cholesterol": "value or empty string",
+    "hemoglobin": "value or empty string"
+  },
+  "notes": "Summary of key findings and recommendations from the report"
+}
+
+IMPORTANT: Respond ONLY with valid JSON. No markdown.
+Extract as much relevant medical data as possible. If a metric is not found, use empty string.
+The "extracted_text" field should contain the complete readable text from the document.`,
+              },
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "image_url",
+                    image_url: {
+                      url: `data:${fileMimeType};base64,${fileBase64}`,
+                    },
+                  },
+                  {
+                    type: "text",
+                    text: `Analyze this medical document named "${body.reportName || "Unknown"}". Extract all text and medical data.`,
+                  },
+                ],
+              },
+            ],
+          }),
+        });
+
+        const result = await parseAIResponse(multimodalResponse);
+
+        if (result.error) {
+          return new Response(JSON.stringify({ error: result.error }), {
+            status: result.status,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        return new Response(JSON.stringify(result.parsed), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Fallback: text-only analysis (legacy)
       systemPrompt = `You are MedTwin AI's report analysis engine.
 Analyze the provided medical report text and extract structured data.
 
 Respond with a JSON object:
 {
+  "extracted_text": "the input text",
   "conditions_detected": ["list of conditions or findings"],
   "key_metrics": {
     "blood_pressure": "value or empty string",
@@ -205,7 +277,6 @@ ${body.reportText || "No text provided"}
 Report name: ${body.reportName || "Unknown"}
 
 Analyze this report and extract structured data.`;
-
     } else if (stage === "clinical-report") {
       systemPrompt = `You are MedTwin AI generating a clinical session summary report.
 Create a professional, structured clinical report based on the session data.
