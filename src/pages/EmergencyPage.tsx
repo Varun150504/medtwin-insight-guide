@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Shield, Phone, MapPin, AlertTriangle, Plus, Trash2, Users, Send } from "lucide-react";
+import { Shield, Phone, MapPin, AlertTriangle, Plus, Trash2, Users, Send, Copy, Check, MessageCircle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -17,6 +17,13 @@ interface EmergencyContact {
   relationship: string | null;
 }
 
+interface SOSAlert {
+  timestamp: string;
+  latitude: number | null;
+  longitude: number | null;
+  contactsNotified: string[];
+}
+
 export default function EmergencyPage() {
   const { user, loading: authLoading } = useAuth();
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
@@ -25,7 +32,8 @@ export default function EmergencyPage() {
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [newRelation, setNewRelation] = useState("");
-  const [sosTriggered, setSosTriggered] = useState(false);
+  const [sosAlert, setSosAlert] = useState<SOSAlert | null>(null);
+  const [copiedNumber, setCopiedNumber] = useState<string | null>(null);
 
   const fetchContacts = () => {
     if (!user) return;
@@ -69,33 +77,51 @@ export default function EmergencyPage() {
     fetchContacts();
   };
 
-  const handleSOS = () => {
-    setSosTriggered(true);
+  const copyNumber = (number: string) => {
+    navigator.clipboard.writeText(number);
+    setCopiedNumber(number);
+    toast.success(`Copied ${number}`);
+    setTimeout(() => setCopiedNumber(null), 2000);
+  };
 
-    // Get location
+  const handleSOS = () => {
+    const alert: SOSAlert = {
+      timestamp: new Date().toLocaleString(),
+      latitude: null,
+      longitude: null,
+      contactsNotified: contacts.map(c => c.name),
+    };
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          const { latitude, longitude } = pos.coords;
-          toast.success(
-            `🚨 SOS Alert Simulated!\n\nLocation: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}\nContacts notified: ${contacts.length}\nCondition: Emergency`,
-            { duration: 8000 }
-          );
+          alert.latitude = pos.coords.latitude;
+          alert.longitude = pos.coords.longitude;
+          setSosAlert({ ...alert });
         },
-        () => {
-          toast.success(
-            `🚨 SOS Alert Simulated!\n\nLocation: Unable to determine\nContacts notified: ${contacts.length}\nCondition: Emergency`,
-            { duration: 8000 }
-          );
-        }
+        () => setSosAlert(alert)
       );
     } else {
-      toast.success(`🚨 SOS Alert Simulated! ${contacts.length} contacts would be notified.`, { duration: 5000 });
+      setSosAlert(alert);
     }
+  };
+
+  const getWhatsAppUrl = () => {
+    const loc = sosAlert?.latitude && sosAlert?.longitude
+      ? `📍 Location: https://maps.google.com/?q=${sosAlert.latitude},${sosAlert.longitude}`
+      : "📍 Location: Unable to determine";
+    const msg = encodeURIComponent(`🚨 EMERGENCY SOS ALERT\n\nI need immediate help!\n${loc}\n\nSent via MedTwin AI`);
+    return `https://wa.me/?text=${msg}`;
   };
 
   if (authLoading) return null;
   if (!user) return <AuthPage />;
+
+  const emergencyNumbers = [
+    { name: "Emergency Services", number: "911" },
+    { name: "Poison Control", number: "1-800-222-1222" },
+    { name: "Suicide & Crisis Lifeline", number: "988" },
+  ];
 
   return (
     <AppLayout>
@@ -111,26 +137,46 @@ export default function EmergencyPage() {
               <AlertTriangle className="h-5 w-5" /> Emergency SOS
             </CardTitle>
             <CardDescription>
-              Triggers an alert to your emergency contacts with your condition and location.
+              Triggers an alert with your location. Share via WhatsApp to notify your contacts.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Button variant="emergency" size="lg" className="w-full text-lg py-6" onClick={handleSOS}>
               <Phone className="h-5 w-5 mr-2" /> ACTIVATE SOS
             </Button>
-            {sosTriggered && (
-              <div className="p-3 rounded-lg bg-critical/10 border border-critical/20 animate-fade-in text-sm space-y-1">
+            {sosAlert && (
+              <div className="p-4 rounded-lg bg-critical/10 border border-critical/20 animate-fade-in space-y-3">
                 <p className="font-semibold text-critical flex items-center gap-2">
-                  <Send className="h-4 w-4" /> SOS Alert Sent (Simulated)
+                  <Send className="h-4 w-4" /> SOS Alert Activated
                 </p>
-                <p className="text-muted-foreground">
-                  {contacts.length > 0
-                    ? `${contacts.length} emergency contact(s) would be notified: ${contacts.map(c => c.name).join(", ")}`
-                    : "No emergency contacts configured. Add contacts below."}
-                </p>
-                <p className="text-muted-foreground flex items-center gap-1">
-                  <MapPin className="h-3 w-3" /> Location sharing simulated
-                </p>
+                <div className="text-sm space-y-1 text-muted-foreground">
+                  <p>⏰ {sosAlert.timestamp}</p>
+                  <p className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    {sosAlert.latitude && sosAlert.longitude
+                      ? `${sosAlert.latitude.toFixed(4)}, ${sosAlert.longitude.toFixed(4)}`
+                      : "Location unavailable"}
+                  </p>
+                  <p>
+                    {sosAlert.contactsNotified.length > 0
+                      ? `Contacts: ${sosAlert.contactsNotified.join(", ")}`
+                      : "No emergency contacts configured"}
+                  </p>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" className="flex-1">
+                    <Button variant="hero" className="w-full gap-2">
+                      <MessageCircle className="h-4 w-4" /> Share via WhatsApp
+                    </Button>
+                  </a>
+                  {sosAlert.latitude && sosAlert.longitude && (
+                    <a href={`https://maps.google.com/?q=${sosAlert.latitude},${sosAlert.longitude}`} target="_blank" rel="noopener noreferrer">
+                      <Button variant="outline" className="gap-2">
+                        <MapPin className="h-4 w-4" /> Map
+                      </Button>
+                    </a>
+                  )}
+                </div>
               </div>
             )}
           </CardContent>
@@ -165,10 +211,15 @@ export default function EmergencyPage() {
                       {contact.relationship && ` · ${contact.relationship}`}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <a href={`tel:${contact.phone_number}`} className="text-primary">
-                      <Phone className="h-4 w-4" />
+                  <div className="flex items-center gap-1">
+                    <a href={`tel:${contact.phone_number}`}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" title="Call (mobile only)">
+                        <Phone className="h-3.5 w-3.5 text-primary" />
+                      </Button>
                     </a>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyNumber(contact.phone_number)} title="Copy number">
+                      {copiedNumber === contact.phone_number ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteContact(contact.id)}>
                       <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                     </Button>
@@ -185,16 +236,42 @@ export default function EmergencyPage() {
             <CardTitle className="font-display text-base">Emergency Numbers</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {[
-              { name: "Emergency Services", number: "911" },
-              { name: "Poison Control", number: "1-800-222-1222" },
-              { name: "Suicide & Crisis Lifeline", number: "988" },
-            ].map((contact) => (
+            {emergencyNumbers.map((contact) => (
               <div key={contact.number} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
                 <span className="font-medium text-sm">{contact.name}</span>
-                <a href={`tel:${contact.number}`} className="text-primary font-semibold text-sm">{contact.number}</a>
+                <div className="flex items-center gap-2">
+                  <a href={`tel:${contact.number}`} className="text-primary font-semibold text-sm">{contact.number}</a>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyNumber(contact.number)} title="Copy number">
+                    {copiedNumber === contact.number ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
+                  </Button>
+                </div>
               </div>
             ))}
+          </CardContent>
+        </Card>
+
+        {/* Find Nearby Hospitals */}
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="font-display text-base flex items-center gap-2">
+              <MapPin className="h-4 w-4" /> Find Nearby Hospitals
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <a href="https://www.google.com/maps/search/hospitals+near+me" target="_blank" rel="noopener noreferrer" className="block">
+              <Button variant="outline" className="w-full gap-2">
+                <ExternalLink className="h-4 w-4" /> Open Google Maps — Hospitals Near Me
+              </Button>
+            </a>
+            <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
+              <p className="font-medium">When calling emergency services:</p>
+              <ul className="list-disc list-inside space-y-0.5">
+                <li>State your location clearly</li>
+                <li>Describe the medical emergency</li>
+                <li>Stay on the line until instructed otherwise</li>
+                <li>Have your ID and medication list ready</li>
+              </ul>
+            </div>
           </CardContent>
         </Card>
 
