@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RiskBadge, RiskScoreBar } from "@/components/RiskBadge";
-import { AlertTriangle, HelpCircle, Hospital, Phone, RefreshCw, ChevronDown, ChevronUp, Lightbulb, Shield, TrendingUp, FileText, MapPin, Loader2 } from "lucide-react";
+import { AlertTriangle, HelpCircle, Hospital, Phone, RefreshCw, ChevronDown, ChevronUp, Lightbulb, Shield, TrendingUp, FileText, MapPin, Loader2, Download, Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
 import type { AnalysisResult } from "@/hooks/useHealthSession";
 
 interface DiagnosisResultProps {
@@ -42,9 +43,20 @@ export function DiagnosisResult({ result, onReset, onSimulateDecision, onGenerat
     setReportLoading(false);
   };
 
-  const handleFindHospitals = () => {
-    setShowHospitals(true);
-    window.open("https://www.google.com/maps/search/hospitals+near+me", "_blank");
+  const handleDownloadReport = () => {
+    if (!clinicalReport) return;
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Clinical Report - MedTwin AI</title><style>body{font-family:system-ui,sans-serif;max-width:700px;margin:40px auto;padding:20px;color:#1a1a1a;line-height:1.6}h1{font-size:22px;border-bottom:2px solid #3b82f6;padding-bottom:8px}h2{font-size:15px;color:#6b7280;margin-top:20px;margin-bottom:4px}p,li{font-size:14px}.disclaimer{font-size:11px;color:#999;border-top:1px solid #eee;padding-top:12px;margin-top:24px;font-style:italic}@media print{body{margin:0}}</style></head><body><h1>🩺 Clinical Session Report</h1><p><strong>Date:</strong> ${clinicalReport.date || new Date().toLocaleDateString()}</p><h2>Patient Summary</h2><p>${clinicalReport.patient_summary}</p><h2>Presenting Symptoms</h2><ul>${(clinicalReport.presenting_symptoms || []).map((s: string) => `<li>${s}</li>`).join("")}</ul><h2>Follow-Up Assessment</h2><p>${clinicalReport.follow_up_assessment}</p><h2>Diagnosis</h2><p><strong>${clinicalReport.diagnosis}</strong></p><h2>Risk Assessment</h2><p>${clinicalReport.risk_assessment}</p><h2>Recommended Actions</h2><ul>${(clinicalReport.recommended_actions || []).map((a: string) => `<li>${a}</li>`).join("")}</ul>${clinicalReport.notes ? `<h2>Notes</h2><p>${clinicalReport.notes}</p>` : ""}<p class="disclaimer">${clinicalReport.disclaimer || "This is an AI-generated report and should not replace professional medical advice."}</p></body></html>`;
+    const w = window.open("", "_blank");
+    if (w) {
+      w.document.write(html);
+      w.document.close();
+      w.print();
+    }
+  };
+
+  const copyEmergencyNumber = (number: string) => {
+    navigator.clipboard.writeText(number);
+    toast.success(`Copied ${number} to clipboard`);
   };
 
   return (
@@ -105,12 +117,19 @@ export function DiagnosisResult({ result, onReset, onSimulateDecision, onGenerat
         </Button>
         {isCritical && (
           <>
-            <Button variant="emergency" className="gap-2" onClick={() => window.open("tel:911")}>
-              <Phone className="h-4 w-4" /> Emergency Help
+            <a href="tel:911" className="inline-flex">
+              <Button variant="emergency" className="gap-2">
+                <Phone className="h-4 w-4" /> Call 911
+              </Button>
+            </a>
+            <Button variant="outline" onClick={() => copyEmergencyNumber("911")} className="gap-2">
+              <Copy className="h-4 w-4" /> Copy 911
             </Button>
-            <Button variant="outline" onClick={handleFindHospitals} className="gap-2 border-critical/30 text-critical hover:bg-critical/5">
-              <MapPin className="h-4 w-4" /> Find Nearby Hospitals
-            </Button>
+            <a href="https://www.google.com/maps/search/hospitals+near+me" target="_blank" rel="noopener noreferrer" className="inline-flex">
+              <Button variant="outline" className="gap-2 border-critical/30 text-critical hover:bg-critical/5">
+                <MapPin className="h-4 w-4" /> Find Nearby Hospitals
+              </Button>
+            </a>
           </>
         )}
         <Button variant="ghost" onClick={onReset} className="gap-2 ml-auto">
@@ -145,24 +164,7 @@ export function DiagnosisResult({ result, onReset, onSimulateDecision, onGenerat
         </Card>
       )}
 
-      {/* Hospital Finder for high/critical */}
-      {isCritical && showHospitals && (
-        <Card className="shadow-card animate-fade-in border-critical/20">
-          <CardHeader>
-            <CardTitle className="font-display text-base flex items-center gap-2 text-critical">
-              <MapPin className="h-4 w-4" /> Nearby Hospitals
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-sm text-muted-foreground mb-3">
-              Based on your risk level, we recommend visiting a hospital. A search has been opened in a new tab.
-            </p>
-            <Button variant="outline" onClick={() => window.open("https://www.google.com/maps/search/hospitals+near+me", "_blank")} className="w-full gap-2">
-              <MapPin className="h-4 w-4" /> Open Hospital Map
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+      {/* Removed old hospital finder - now uses direct link above */}
 
       {/* Decision Simulation Modal */}
       <Dialog open={decisionModal} onOpenChange={setDecisionModal}>
@@ -241,6 +243,9 @@ export function DiagnosisResult({ result, onReset, onSimulateDecision, onGenerat
                 </div>
               )}
               <p className="text-xs text-muted-foreground italic border-t pt-3">{clinicalReport.disclaimer}</p>
+              <Button variant="hero" className="w-full gap-2 mt-2" onClick={handleDownloadReport}>
+                <Download className="h-4 w-4" /> Download as PDF
+              </Button>
             </div>
           ) : null}
         </DialogContent>
