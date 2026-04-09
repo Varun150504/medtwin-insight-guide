@@ -117,7 +117,7 @@ export function useHealthSession() {
       const ctx = await fetchUserContext(user.id);
 
       const { data: aiData, error: aiError } = await supabase.functions.invoke("medtwin-analyze", {
-        body: { stage: "questions", symptoms: syms, description: desc, ...ctx },
+        body: { stage: "questions", symptoms: syms, description: desc, twinState, ...ctx },
       });
 
       if (aiError) throw aiError;
@@ -159,6 +159,7 @@ export function useHealthSession() {
           description: session?.symptom_description ?? description,
           questions: session?.followup_questions ?? [],
           answers: userAnswers,
+          twinState,
           ...ctx,
         },
       });
