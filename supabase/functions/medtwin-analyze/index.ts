@@ -22,7 +22,7 @@ function callAI(apiKey: string, systemPrompt: string, userPrompt: string) {
   });
 }
 
-function buildContext(profile: any, history: any[], reports: any[]) {
+function buildContext(profile: any, history: any[], reports: any[], twinState?: any) {
   const profileContext = profile
     ? `Patient profile: Age: ${profile.age || "unknown"}, Blood type: ${profile.blood_type || "unknown"}, Allergies: ${(profile.allergies || []).join(", ") || "none"}, Chronic conditions: ${(profile.chronic_conditions || []).join(", ") || "none"}.`
     : "";
@@ -41,7 +41,22 @@ function buildContext(profile: any, history: any[], reports: any[]) {
       }).join("\n")}`
     : "No medical reports on file.";
 
-  return { profileContext, historyContext, reportContext };
+  let twinContext = "";
+  if (twinState && twinState.session_count > 0) {
+    twinContext = `\n\nDIGITAL TWIN STATE (evolving intelligence model):
+- Health Score: ${twinState.health_score}/100
+- Trend: ${twinState.trend} (${twinState.trend === "worsening" ? "ATTENTION: patient health is declining" : twinState.trend === "improving" ? "patient is recovering" : "stable"})
+- Risk Baseline: ${twinState.risk_baseline}
+- Last Risk Level: ${twinState.last_risk_level || "none"}
+- Recurring Symptoms: ${(twinState.recurring_symptoms || []).join(", ") || "none detected"}
+- Recurring Conditions: ${(twinState.recurring_conditions || []).join(", ") || "none detected"}
+- Total Sessions: ${twinState.session_count}
+- Last Session: ${twinState.last_session_at || "unknown"}
+
+IMPORTANT: You MUST reference the twin state in your analysis. If recurring symptoms exist, mention them. If the trend is worsening, flag it. If health score is low, consider it in your risk assessment.`;
+  }
+
+  return { profileContext, historyContext, reportContext, twinContext };
 }
 
 async function parseAIResponse(response: Response) {
@@ -68,12 +83,12 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { stage, symptoms, description, questions, answers, profile, history, reports, diagnosis } = body;
+    const { stage, symptoms, description, questions, answers, profile, history, reports, diagnosis, twinState: twinStateData } = body;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { profileContext, historyContext, reportContext } = buildContext(profile || {}, history || [], reports || []);
-    const fullContext = `${profileContext}\n${historyContext}\n${reportContext}`;
+    const { profileContext, historyContext, reportContext, twinContext } = buildContext(profile || {}, history || [], reports || [], twinStateData);
+    const fullContext = `${profileContext}\n${historyContext}\n${reportContext}${twinContext}`;
 
     let systemPrompt = "";
     let userPrompt = "";
@@ -90,6 +105,9 @@ CRITICAL INSTRUCTIONS FOR QUESTION GENERATION:
 5. Probe severity, duration, onset pattern, and associated symptoms.
 6. Ask about environmental/lifestyle factors (stress, sleep, diet, hydration) when relevant.
 7. Be specific — reference actual numbers, dates, and condition names from the patient's records when available.
+8. If the DIGITAL TWIN STATE shows recurring symptoms, ask about pattern: "You've reported [symptom] multiple times recently — is it getting worse or staying the same?"
+9. If the twin's health trend is "worsening", ask about recent lifestyle changes or missed treatments.
+10. ALWAYS provide 2-4 option choices for each question AND allow free-text answers.
 
 You must respond with a JSON object containing a "questions" array. Each question has:
 - "id": number (1-4)

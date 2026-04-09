@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useTwinState } from "@/hooks/useTwinState";
 
 interface FollowUpQuestion {
   id: number;
@@ -49,6 +50,7 @@ async function fetchUserContext(userId: string) {
 
 export function useHealthSession() {
   const { user } = useAuth();
+  const { twinState, computeAndUpdate } = useTwinState();
   const [stage, setStage] = useState<SessionStage>("input");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [symptoms, setSymptoms] = useState<string[]>([]);
@@ -115,7 +117,7 @@ export function useHealthSession() {
       const ctx = await fetchUserContext(user.id);
 
       const { data: aiData, error: aiError } = await supabase.functions.invoke("medtwin-analyze", {
-        body: { stage: "questions", symptoms: syms, description: desc, ...ctx },
+        body: { stage: "questions", symptoms: syms, description: desc, twinState, ...ctx },
       });
 
       if (aiError) throw aiError;
@@ -157,6 +159,7 @@ export function useHealthSession() {
           description: session?.symptom_description ?? description,
           questions: session?.followup_questions ?? [],
           answers: userAnswers,
+          twinState,
           ...ctx,
         },
       });
@@ -178,6 +181,8 @@ export function useHealthSession() {
         description: diagnosis.reasoning, session_id: sessionId,
         metadata: { risk_level: diagnosis.risk_level, risk_score: diagnosis.risk_score } as any,
       });
+      // Update twin state after diagnosis
+      await computeAndUpdate();
 
       setStage("complete");
     } catch (err: any) {

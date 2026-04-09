@@ -205,6 +205,51 @@ export type Database = {
         }
         Relationships: []
       }
+      twin_state: {
+        Row: {
+          contextual_factors: Json | null
+          health_score: number | null
+          id: string
+          last_risk_level: string | null
+          last_session_at: string | null
+          recurring_conditions: Json | null
+          recurring_symptoms: Json | null
+          risk_baseline: string | null
+          session_count: number | null
+          trend: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          contextual_factors?: Json | null
+          health_score?: number | null
+          id?: string
+          last_risk_level?: string | null
+          last_session_at?: string | null
+          recurring_conditions?: Json | null
+          recurring_symptoms?: Json | null
+          risk_baseline?: string | null
+          session_count?: number | null
+          trend?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          contextual_factors?: Json | null
+          health_score?: number | null
+          id?: string
+          last_risk_level?: string | null
+          last_session_at?: string | null
+          recurring_conditions?: Json | null
+          recurring_symptoms?: Json | null
+          risk_baseline?: string | null
+          session_count?: number | null
+          trend?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

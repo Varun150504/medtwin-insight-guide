@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Send } from "lucide-react";
+import { ChevronLeft, ChevronRight, Send, MessageCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Question {
   id: number;
@@ -18,72 +19,145 @@ interface FollowUpQuestionsProps {
 }
 
 export function FollowUpQuestions({ questions, onSubmit, loading }: FollowUpQuestionsProps) {
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [customTexts, setCustomTexts] = useState<Record<number, string>>({});
+
+  const current = questions[currentIndex];
+  const total = questions.length;
+  const allAnswered = questions.every((q) => answers[q.id]?.trim());
 
   const setAnswer = (id: number, value: string) => {
     setAnswers((prev) => ({ ...prev, [id]: value }));
+    setCustomTexts((prev) => ({ ...prev, [id]: "" }));
   };
 
-  const allAnswered = questions.every((q) => answers[q.id]?.trim());
+  const setCustomText = (id: number, value: string) => {
+    setCustomTexts((prev) => ({ ...prev, [id]: value }));
+    if (value.trim()) {
+      setAnswers((prev) => ({ ...prev, [id]: value.trim() }));
+    }
+  };
+
+  const goNext = () => {
+    if (currentIndex < total - 1) setCurrentIndex(currentIndex + 1);
+  };
+
+  const goPrev = () => {
+    if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
+  };
 
   return (
-    <Card className="shadow-elevated animate-slide-up">
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center">
-            <MessageCircle className="h-5 w-5 text-secondary-foreground" />
-          </div>
-          <div>
-            <CardTitle className="font-display">MedTwin AI needs more context</CardTitle>
-            <CardDescription>Please answer these follow-up questions for a more accurate analysis.</CardDescription>
-          </div>
+    <div className="space-y-4 animate-slide-up">
+      {/* Progress bar */}
+      <div className="flex items-center gap-3">
+        <div className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center">
+          <MessageCircle className="h-4 w-4 text-secondary-foreground" />
         </div>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        {questions.map((q, index) => (
-          <div key={q.id} className="space-y-2 animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
-            <p className="text-sm font-medium">
-              <span className="text-primary mr-2">Q{index + 1}.</span>
-              {q.question}
-            </p>
-            {q.options && q.options.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {q.options.map((opt) => (
-                  <Badge
-                    key={opt}
-                    variant={answers[q.id] === opt ? "default" : "outline"}
-                    className="cursor-pointer transition-all hover:scale-105"
-                    onClick={() => setAnswer(q.id, opt)}
-                  >
-                    {opt}
-                  </Badge>
-                ))}
-              </div>
-            ) : (
-              <Textarea
-                placeholder="Your answer..."
-                value={answers[q.id] || ""}
-                onChange={(e) => setAnswer(q.id, e.target.value)}
-                rows={2}
-              />
-            )}
-          </div>
-        ))}
+        <div className="flex-1">
+          <p className="text-sm font-medium font-display">Follow-up Questions</p>
+          <p className="text-xs text-muted-foreground">Question {currentIndex + 1} of {total}</p>
+        </div>
+      </div>
 
-        <Button
-          variant="hero"
-          size="lg"
-          className="w-full"
-          onClick={() => onSubmit(answers)}
-          disabled={!allAnswered || loading}
-        >
-          {loading ? "Analyzing..." : (
-            <span className="flex items-center gap-2">
-              <Send className="h-4 w-4" /> Submit & Get Diagnosis
-            </span>
-          )}
-        </Button>
-      </CardContent>
-    </Card>
+      {/* Progress dots */}
+      <div className="flex gap-1.5 justify-center">
+        {questions.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setCurrentIndex(i)}
+            className={cn(
+              "h-2 rounded-full transition-all duration-300",
+              i === currentIndex ? "w-8 bg-primary" : answers[questions[i].id] ? "w-2 bg-primary/50" : "w-2 bg-muted-foreground/20"
+            )}
+          />
+        ))}
+      </div>
+
+      {/* Flashcard */}
+      <Card className="glass-card overflow-hidden border-t-4 border-t-primary/30">
+        <CardContent className="p-6 space-y-5">
+          <div className="min-h-[200px] flex flex-col justify-between">
+            <div className="space-y-4">
+              <p className="text-lg font-semibold font-display leading-snug">
+                <span className="text-primary mr-2">Q{currentIndex + 1}.</span>
+                {current.question}
+              </p>
+
+              {/* Option chips */}
+              {current.options && current.options.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {current.options.map((opt) => (
+                    <Badge
+                      key={opt}
+                      variant={answers[current.id] === opt && !customTexts[current.id]?.trim() ? "default" : "outline"}
+                      className={cn(
+                        "cursor-pointer text-sm px-4 py-2 transition-all hover:scale-105",
+                        answers[current.id] === opt && !customTexts[current.id]?.trim()
+                          ? "shadow-md"
+                          : "hover:bg-secondary"
+                      )}
+                      onClick={() => setAnswer(current.id, opt)}
+                    >
+                      {opt}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              {/* Custom text input */}
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5">Or describe in your own words...</p>
+                <Input
+                  placeholder="Type your answer..."
+                  value={customTexts[current.id] || ""}
+                  onChange={(e) => setCustomText(current.id, e.target.value)}
+                  className="bg-background/50"
+                />
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex items-center justify-between pt-4 mt-4 border-t border-border/50">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={goPrev}
+                disabled={currentIndex === 0}
+                className="gap-1"
+              >
+                <ChevronLeft className="h-4 w-4" /> Previous
+              </Button>
+
+              {currentIndex < total - 1 ? (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={goNext}
+                  disabled={!answers[current.id]?.trim()}
+                  className="gap-1"
+                >
+                  Next <ChevronRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  variant="hero"
+                  size="sm"
+                  onClick={() => onSubmit(answers)}
+                  disabled={!allAnswered || loading}
+                  className="gap-1"
+                >
+                  {loading ? "Analyzing..." : (
+                    <>
+                      <Send className="h-4 w-4" /> Submit
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
