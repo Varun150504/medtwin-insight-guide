@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useTwinState } from "@/hooks/useTwinState";
 
 interface FollowUpQuestion {
   id: number;
@@ -49,6 +50,7 @@ async function fetchUserContext(userId: string) {
 
 export function useHealthSession() {
   const { user } = useAuth();
+  const { twinState, computeAndUpdate } = useTwinState();
   const [stage, setStage] = useState<SessionStage>("input");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [symptoms, setSymptoms] = useState<string[]>([]);
