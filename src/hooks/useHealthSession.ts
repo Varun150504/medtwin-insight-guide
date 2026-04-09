@@ -181,6 +181,8 @@ export function useHealthSession() {
         description: diagnosis.reasoning, session_id: sessionId,
         metadata: { risk_level: diagnosis.risk_level, risk_score: diagnosis.risk_score } as any,
       });
+      // Update twin state after diagnosis
+      await computeAndUpdate();
 
       setStage("complete");
     } catch (err: any) {
