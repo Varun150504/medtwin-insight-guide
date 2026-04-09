@@ -83,12 +83,12 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { stage, symptoms, description, questions, answers, profile, history, reports, diagnosis } = body;
+    const { stage, symptoms, description, questions, answers, profile, history, reports, diagnosis, twinState: twinStateData } = body;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { profileContext, historyContext, reportContext } = buildContext(profile || {}, history || [], reports || []);
-    const fullContext = `${profileContext}\n${historyContext}\n${reportContext}`;
+    const { profileContext, historyContext, reportContext, twinContext } = buildContext(profile || {}, history || [], reports || [], twinStateData);
+    const fullContext = `${profileContext}\n${historyContext}\n${reportContext}${twinContext}`;
 
     let systemPrompt = "";
     let userPrompt = "";
