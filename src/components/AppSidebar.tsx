@@ -2,6 +2,7 @@ import { Activity, Brain, Clock, FileText, Heart, Shield, User, LogOut } from "l
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTwinState } from "@/hooks/useTwinState";
 import {
   Sidebar,
   SidebarContent,
@@ -29,6 +30,9 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { signOut, user } = useAuth();
+  const { twinState } = useTwinState();
+
+  const scoreColor = twinState.health_score >= 70 ? "text-success" : twinState.health_score >= 40 ? "text-warning" : "text-critical";
 
   return (
     <Sidebar collapsible="icon">
@@ -36,7 +40,9 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>
             <div className="flex items-center gap-2">
-              <Heart className="h-5 w-5 text-primary" />
+              <div className="h-6 w-6 rounded-md bg-gradient-primary flex items-center justify-center">
+                <Heart className="h-3 w-3 text-primary-foreground" />
+              </div>
               {!collapsed && <span className="font-display font-bold text-base">MedTwin AI</span>}
             </div>
           </SidebarGroupLabel>
@@ -49,7 +55,7 @@ export function AppSidebar() {
                       to={item.url}
                       end={item.url === "/"}
                       className="hover:bg-sidebar-accent/50"
-                      activeClassName="bg-sidebar-accent text-primary font-medium"
+                      activeClassName="bg-gradient-primary/10 text-primary font-medium border-l-2 border-l-primary"
                     >
                       <item.icon className="mr-2 h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
@@ -62,6 +68,17 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
+        {!collapsed && twinState.session_count > 0 && (
+          <div className="px-3 pb-2 flex items-center gap-2">
+            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+              <span className={`text-xs font-bold ${scoreColor}`}>{twinState.health_score}</span>
+            </div>
+            <div>
+              <p className="text-xs font-medium">Health Score</p>
+              <p className="text-[10px] text-muted-foreground capitalize">{twinState.trend}</p>
+            </div>
+          </div>
+        )}
         {!collapsed && user && (
           <div className="px-3 pb-2">
             <p className="text-xs text-muted-foreground truncate">{user.email}</p>
