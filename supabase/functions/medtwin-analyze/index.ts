@@ -105,6 +105,9 @@ CRITICAL INSTRUCTIONS FOR QUESTION GENERATION:
 5. Probe severity, duration, onset pattern, and associated symptoms.
 6. Ask about environmental/lifestyle factors (stress, sleep, diet, hydration) when relevant.
 7. Be specific — reference actual numbers, dates, and condition names from the patient's records when available.
+8. If the DIGITAL TWIN STATE shows recurring symptoms, ask about pattern: "You've reported [symptom] multiple times recently — is it getting worse or staying the same?"
+9. If the twin's health trend is "worsening", ask about recent lifestyle changes or missed treatments.
+10. ALWAYS provide 2-4 option choices for each question AND allow free-text answers.
 
 You must respond with a JSON object containing a "questions" array. Each question has:
 - "id": number (1-4)
