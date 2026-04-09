@@ -22,7 +22,7 @@ function callAI(apiKey: string, systemPrompt: string, userPrompt: string) {
   });
 }
 
-function buildContext(profile: any, history: any[], reports: any[]) {
+function buildContext(profile: any, history: any[], reports: any[], twinState?: any) {
   const profileContext = profile
     ? `Patient profile: Age: ${profile.age || "unknown"}, Blood type: ${profile.blood_type || "unknown"}, Allergies: ${(profile.allergies || []).join(", ") || "none"}, Chronic conditions: ${(profile.chronic_conditions || []).join(", ") || "none"}.`
     : "";
@@ -41,7 +41,22 @@ function buildContext(profile: any, history: any[], reports: any[]) {
       }).join("\n")}`
     : "No medical reports on file.";
 
-  return { profileContext, historyContext, reportContext };
+  let twinContext = "";
+  if (twinState && twinState.session_count > 0) {
+    twinContext = `\n\nDIGITAL TWIN STATE (evolving intelligence model):
+- Health Score: ${twinState.health_score}/100
+- Trend: ${twinState.trend} (${twinState.trend === "worsening" ? "ATTENTION: patient health is declining" : twinState.trend === "improving" ? "patient is recovering" : "stable"})
+- Risk Baseline: ${twinState.risk_baseline}
+- Last Risk Level: ${twinState.last_risk_level || "none"}
+- Recurring Symptoms: ${(twinState.recurring_symptoms || []).join(", ") || "none detected"}
+- Recurring Conditions: ${(twinState.recurring_conditions || []).join(", ") || "none detected"}
+- Total Sessions: ${twinState.session_count}
+- Last Session: ${twinState.last_session_at || "unknown"}
+
+IMPORTANT: You MUST reference the twin state in your analysis. If recurring symptoms exist, mention them. If the trend is worsening, flag it. If health score is low, consider it in your risk assessment.`;
+  }
+
+  return { profileContext, historyContext, reportContext, twinContext };
 }
 
 async function parseAIResponse(response: Response) {
