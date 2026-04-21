@@ -184,7 +184,27 @@ export default function ReportsPage() {
         ) : (
           <div className="space-y-3">
             {reports.map((report) => {
-              const sd = report.structured_data as any;
+              const sd = (report.structured_data as any) || {};
+              const patient = sd.patient_explanation;
+              const doctor = sd.doctor_explanation;
+              const metrics: any[] = sd.simplified_metrics || [];
+              const hasDual = patient || doctor;
+
+              const statusColor = (s: string) => {
+                if (s === "high") return "bg-destructive/10 text-destructive border-destructive/30";
+                if (s === "low") return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/30";
+                if (s === "critical") return "bg-destructive text-destructive-foreground border-destructive";
+                if (s === "normal") return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30";
+                return "bg-muted text-muted-foreground border-border";
+              };
+              const statusIcon = (s: string) => {
+                if (s === "high") return <ArrowUp className="h-3 w-3" />;
+                if (s === "low") return <ArrowDown className="h-3 w-3" />;
+                if (s === "critical") return <AlertTriangle className="h-3 w-3" />;
+                if (s === "normal") return <CheckCircle2 className="h-3 w-3" />;
+                return null;
+              };
+
               return (
                 <Card key={report.id} className="shadow-card">
                   <CardContent className="py-4">
@@ -193,31 +213,141 @@ export default function ReportsPage() {
                         <FileText className="h-4 w-4 text-secondary-foreground" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium text-sm">{report.report_name}</p>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteReport(report.id)}>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm truncate">{report.report_name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(report.created_at), "MMM d, yyyy")}
+                              {sd.report_type && <> · <span className="font-medium">{sd.report_type}</span></>}
+                            </p>
+                          </div>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => deleteReport(report.id)}>
                             <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(report.created_at), "MMM d, yyyy")}
-                        </p>
-                        {sd && (
-                          <div className="mt-2 space-y-1.5">
-                            {sd.conditions_detected?.length > 0 && (
-                              <div className="flex flex-wrap gap-1">
-                                {sd.conditions_detected.map((c: string, i: number) => (
-                                  <Badge key={i} variant="outline" className="text-xs">{c}</Badge>
-                                ))}
-                              </div>
-                            )}
-                            {sd.notes && (
-                              <p className="text-xs text-muted-foreground flex items-start gap-1">
-                                <Brain className="h-3 w-3 mt-0.5 shrink-0 text-primary" />
-                                {sd.notes}
-                              </p>
-                            )}
+
+                        {sd.conditions_detected?.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {sd.conditions_detected.map((c: string, i: number) => (
+                              <Badge key={i} variant="outline" className="text-xs">{c}</Badge>
+                            ))}
                           </div>
+                        )}
+
+                        {metrics.length > 0 && (
+                          <div className="mt-3 space-y-1.5">
+                            <p className="text-xs font-semibold text-muted-foreground">Key Findings</p>
+                            <div className="space-y-1">
+                              {metrics.map((m, i) => (
+                                <div key={i} className={`flex items-start gap-2 text-xs p-2 rounded-md border ${statusColor(m.status)}`}>
+                                  <span className="mt-0.5">{statusIcon(m.status)}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-baseline justify-between gap-2">
+                                      <span className="font-semibold">{m.name}</span>
+                                      <span className="font-mono text-[10px] opacity-80">{m.value}</span>
+                                    </div>
+                                    {m.reference_range && (
+                                      <p className="text-[10px] opacity-70">Normal: {m.reference_range}</p>
+                                    )}
+                                    {m.plain_meaning && (
+                                      <p className="text-[11px] mt-0.5 opacity-90">{m.plain_meaning}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {hasDual && (
+                          <Tabs defaultValue="patient" className="mt-3">
+                            <TabsList className="grid w-full grid-cols-2 h-8">
+                              <TabsTrigger value="patient" className="text-xs gap-1">
+                                <User className="h-3 w-3" /> For You
+                              </TabsTrigger>
+                              <TabsTrigger value="doctor" className="text-xs gap-1">
+                                <Stethoscope className="h-3 w-3" /> For Doctor
+                              </TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="patient" className="mt-2 space-y-2">
+                              {patient?.summary && (
+                                <p className="text-xs leading-relaxed">{patient.summary}</p>
+                              )}
+                              {patient?.what_it_means && (
+                                <div className="text-xs">
+                                  <span className="font-semibold">What this means: </span>
+                                  <span className="text-muted-foreground">{patient.what_it_means}</span>
+                                </div>
+                              )}
+                              {patient?.key_concerns?.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-semibold mb-1">Things to watch:</p>
+                                  <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
+                                    {patient.key_concerns.map((c: string, i: number) => <li key={i}>{c}</li>)}
+                                  </ul>
+                                </div>
+                              )}
+                              {patient?.recommended_next_steps?.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-semibold mb-1">Next steps:</p>
+                                  <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
+                                    {patient.recommended_next_steps.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                                  </ul>
+                                </div>
+                              )}
+                              {patient?.reassurance && (
+                                <p className="text-xs italic text-primary bg-primary/5 p-2 rounded-md">{patient.reassurance}</p>
+                              )}
+                            </TabsContent>
+                            <TabsContent value="doctor" className="mt-2 space-y-2">
+                              {doctor?.clinical_summary && (
+                                <p className="text-xs leading-relaxed font-mono">{doctor.clinical_summary}</p>
+                              )}
+                              {doctor?.abnormal_findings?.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-semibold mb-1">Abnormal findings:</p>
+                                  <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
+                                    {doctor.abnormal_findings.map((f: string, i: number) => <li key={i}>{f}</li>)}
+                                  </ul>
+                                </div>
+                              )}
+                              {doctor?.differential_considerations?.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-semibold mb-1">Differential considerations:</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {doctor.differential_considerations.map((d: string, i: number) => (
+                                      <Badge key={i} variant="secondary" className="text-[10px]">{d}</Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {doctor?.suggested_workup?.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-semibold mb-1">Suggested workup:</p>
+                                  <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
+                                    {doctor.suggested_workup.map((w: string, i: number) => <li key={i}>{w}</li>)}
+                                  </ul>
+                                </div>
+                              )}
+                              {doctor?.red_flags?.length > 0 && (
+                                <div className="bg-destructive/10 border border-destructive/30 p-2 rounded-md">
+                                  <p className="text-xs font-semibold text-destructive flex items-center gap-1 mb-1">
+                                    <AlertTriangle className="h-3 w-3" /> Red flags
+                                  </p>
+                                  <ul className="text-xs text-destructive space-y-0.5 list-disc list-inside">
+                                    {doctor.red_flags.map((r: string, i: number) => <li key={i}>{r}</li>)}
+                                  </ul>
+                                </div>
+                              )}
+                            </TabsContent>
+                          </Tabs>
+                        )}
+
+                        {!hasDual && sd.notes && (
+                          <p className="text-xs text-muted-foreground flex items-start gap-1 mt-2">
+                            <Brain className="h-3 w-3 mt-0.5 shrink-0 text-primary" />
+                            {sd.notes}
+                          </p>
                         )}
                       </div>
                     </div>
