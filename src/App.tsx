@@ -10,6 +10,8 @@ import ReportsPage from "./pages/ReportsPage.tsx";
 import ProfilePage from "./pages/ProfilePage.tsx";
 import EmergencyPage from "./pages/EmergencyPage.tsx";
 import MedicationsPage from "./pages/MedicationsPage.tsx";
+import SimulatorPage from "./pages/SimulatorPage.tsx";
+import VisualAnalysisPage from "./pages/VisualAnalysisPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -28,6 +30,8 @@ const App = () => (
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/emergency" element={<EmergencyPage />} />
             <Route path="/medications" element={<MedicationsPage />} />
+            <Route path="/simulator" element={<SimulatorPage />} />
+            <Route path="/visual-analysis" element={<VisualAnalysisPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
