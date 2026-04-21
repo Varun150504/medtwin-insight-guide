@@ -148,36 +148,19 @@ export const useVisualAnalyses = () => {
       if (findings.alert_doctor) {
         const { data: contacts } = await supabase
           .from("emergency_contacts")
-          .select("name, phone_number, relationship")
+          .select("name, email")
+          .not("email", "is", null)
           .limit(1);
-        const contact = contacts?.[0];
-        if (contact) {
-          alertRecipient = contact.name;
-          // Try to send email via transactional email function (if configured)
-          try {
-            const { error: emailErr } = await supabase.functions.invoke("send-transactional-email", {
-              body: {
-                templateName: "visual-alert",
-                recipientEmail: contact.phone_number, // phone field repurposed - if email is here
-                idempotencyKey: `visual-alert-${saved!.id}`,
-                templateData: {
-                  contactName: contact.name,
-                  patientName: user.email,
-                  bodyLocation: bodyLocation || "unspecified",
-                  severity: findings.severity || "unknown",
-                  alertReason: findings.alert_reason || "Concerning visual findings detected",
-                  recommendations: findings.recommendations || [],
-                },
-              },
-            });
-            alertSent = !emailErr;
-          } catch {
-            alertSent = false;
-          }
+        const contact = contacts?.[0] as { name: string; email: string | null } | undefined;
+        if (contact && contact.email) {
+          alertRecipient = `${contact.name} (${contact.email})`;
           await supabase
             .from("visual_analyses")
-            .update({ alert_sent: alertSent, alert_recipient: alertRecipient })
+            .update({ alert_sent: false, alert_recipient: alertRecipient })
             .eq("id", saved!.id);
+          // Email infrastructure is not yet configured in this project.
+          // The alert intent is recorded; once email is set up, alerts will be sent.
+          alertSent = false;
         }
       }
 
