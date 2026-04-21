@@ -15,6 +15,7 @@ interface EmergencyContact {
   name: string;
   phone_number: string;
   relationship: string | null;
+  email?: string | null;
 }
 
 interface SOSAlert {
@@ -32,6 +33,7 @@ export default function EmergencyPage() {
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [newRelation, setNewRelation] = useState("");
+  const [newEmail, setNewEmail] = useState("");
   const [sosAlert, setSosAlert] = useState<SOSAlert | null>(null);
   const [copiedNumber, setCopiedNumber] = useState<string | null>(null);
 
@@ -58,6 +60,7 @@ export default function EmergencyPage() {
       name: newName.trim(),
       phone_number: newPhone.trim(),
       relationship: newRelation.trim() || null,
+      email: newEmail.trim() || null,
     });
     if (error) {
       toast.error("Failed to add contact");
@@ -66,6 +69,7 @@ export default function EmergencyPage() {
       setNewName("");
       setNewPhone("");
       setNewRelation("");
+      setNewEmail("");
       setShowAdd(false);
       fetchContacts();
     }
@@ -284,6 +288,12 @@ export default function EmergencyPage() {
             <div className="space-y-3">
               <Input placeholder="Name" value={newName} onChange={(e) => setNewName(e.target.value)} />
               <Input placeholder="Phone number" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
+              <Input
+                type="email"
+                placeholder="Email (for visual-analysis alerts)"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+              />
               <Input placeholder="Relationship (optional)" value={newRelation} onChange={(e) => setNewRelation(e.target.value)} />
               <Button variant="hero" className="w-full" onClick={addContact} disabled={!newName.trim() || !newPhone.trim()}>
                 Save Contact

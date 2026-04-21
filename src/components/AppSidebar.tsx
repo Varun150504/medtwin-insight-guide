@@ -1,4 +1,4 @@
-import { Activity, Brain, Clock, FileText, Heart, Pill, Shield, User, LogOut } from "lucide-react";
+import { Activity, Brain, Camera, Clock, FileText, FlaskConical, Heart, Pill, Shield, User, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,6 +19,8 @@ import { Button } from "@/components/ui/button";
 
 const mainItems = [
   { title: "Analyze Symptoms", url: "/", icon: Brain },
+  { title: "Treatment Simulator", url: "/simulator", icon: FlaskConical },
+  { title: "Visual Analysis", url: "/visual-analysis", icon: Camera },
   { title: "Health Timeline", url: "/timeline", icon: Clock },
   { title: "Medical Reports", url: "/reports", icon: FileText },
   { title: "Medications", url: "/medications", icon: Pill },

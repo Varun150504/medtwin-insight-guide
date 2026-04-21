@@ -17,6 +17,7 @@ export type Database = {
       emergency_contacts: {
         Row: {
           created_at: string
+          email: string | null
           id: string
           name: string
           phone_number: string
@@ -25,6 +26,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          email?: string | null
           id?: string
           name: string
           phone_number: string
@@ -33,6 +35,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          email?: string | null
           id?: string
           name?: string
           phone_number?: string
@@ -297,6 +300,45 @@ export type Database = {
         }
         Relationships: []
       }
+      treatment_simulations: {
+        Row: {
+          baseline_metrics: Json | null
+          condition: string
+          created_at: string
+          id: string
+          insights: Json | null
+          lifestyle_inputs: Json
+          narrative: string | null
+          projections: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          baseline_metrics?: Json | null
+          condition: string
+          created_at?: string
+          id?: string
+          insights?: Json | null
+          lifestyle_inputs?: Json
+          narrative?: string | null
+          projections?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          baseline_metrics?: Json | null
+          condition?: string
+          created_at?: string
+          id?: string
+          insights?: Json | null
+          lifestyle_inputs?: Json
+          narrative?: string | null
+          projections?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       twin_state: {
         Row: {
           contextual_factors: Json | null
@@ -339,6 +381,51 @@ export type Database = {
           trend?: string | null
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      visual_analyses: {
+        Row: {
+          ai_findings: Json | null
+          alert_recipient: string | null
+          alert_sent: boolean | null
+          body_location: string | null
+          created_at: string
+          id: string
+          infection_signs: boolean | null
+          photo_url: string
+          severity: string | null
+          urgency: string | null
+          user_id: string
+          user_notes: string | null
+        }
+        Insert: {
+          ai_findings?: Json | null
+          alert_recipient?: string | null
+          alert_sent?: boolean | null
+          body_location?: string | null
+          created_at?: string
+          id?: string
+          infection_signs?: boolean | null
+          photo_url: string
+          severity?: string | null
+          urgency?: string | null
+          user_id: string
+          user_notes?: string | null
+        }
+        Update: {
+          ai_findings?: Json | null
+          alert_recipient?: string | null
+          alert_sent?: boolean | null
+          body_location?: string | null
+          created_at?: string
+          id?: string
+          infection_signs?: boolean | null
+          photo_url?: string
+          severity?: string | null
+          urgency?: string | null
+          user_id?: string
+          user_notes?: string | null
         }
         Relationships: []
       }
