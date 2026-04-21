@@ -17,6 +17,7 @@ export type Database = {
       emergency_contacts: {
         Row: {
           created_at: string
+          email: string | null
           id: string
           name: string
           phone_number: string
@@ -25,6 +26,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          email?: string | null
           id?: string
           name: string
           phone_number: string
@@ -33,6 +35,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          email?: string | null
           id?: string
           name?: string
           phone_number?: string
