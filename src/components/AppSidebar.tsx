@@ -1,4 +1,4 @@
-import { Activity, Brain, Clock, FileText, Heart, Shield, User, LogOut } from "lucide-react";
+import { Activity, Brain, Clock, FileText, Heart, Pill, Shield, User, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,6 +21,7 @@ const mainItems = [
   { title: "Analyze Symptoms", url: "/", icon: Brain },
   { title: "Health Timeline", url: "/timeline", icon: Clock },
   { title: "Medical Reports", url: "/reports", icon: FileText },
+  { title: "Medications", url: "/medications", icon: Pill },
   { title: "Digital Twin", url: "/profile", icon: User },
   { title: "Emergency", url: "/emergency", icon: Shield },
 ];
