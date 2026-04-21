@@ -5,9 +5,9 @@ import { AuthPage } from "@/pages/AuthPage";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Upload, Loader2, Trash2, Brain } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { FileText, Upload, Loader2, Trash2, Brain, User, Stethoscope, AlertTriangle, CheckCircle2, ArrowDown, ArrowUp } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
