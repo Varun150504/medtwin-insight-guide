@@ -235,31 +235,67 @@ export default function MedicationsPage() {
               <p className="text-sm text-muted-foreground text-center py-6">No medications yet.</p>
             )}
             {medications.map((m) => (
-              <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium truncate">{m.name}</p>
-                    {!m.active && <Badge variant="secondary">Paused</Badge>}
+              <div key={m.id} className="p-3 rounded-lg border space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium truncate">{m.name}</p>
+                      {!m.active && <Badge variant="secondary">Paused</Badge>}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {m.dosage && <>{m.dosage} • </>}
+                      {m.reminder_times.join(", ")}
+                    </p>
+                    {m.notes && <p className="text-xs text-muted-foreground mt-1 italic truncate">{m.notes}</p>}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {m.dosage && <>{m.dosage} • </>}
-                    {m.reminder_times.join(", ")}
-                  </p>
-                  {m.notes && <p className="text-xs text-muted-foreground mt-1 italic truncate">{m.notes}</p>}
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="AI check-in"
+                      onClick={async () => {
+                        const fu = await startFollowUp(
+                          `Check-in: ${m.name}`,
+                          "new_medication",
+                          `Currently taking ${m.name}${m.dosage ? ` (${m.dosage})` : ""}, ${m.times_per_day}x/day. ${m.purpose || ""}`,
+                          m.id,
+                        );
+                        if (fu) navigate("/follow-ups");
+                      }}
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title={m.active ? "Pause" : "Resume"}
+                      onClick={() => updateMedication(m.id, { active: !m.active })}
+                    >
+                      <Power className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" title="Delete" onClick={() => deleteMedication(m.id)}>
+                      <Trash2 className="h-4 w-4 text-critical" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    title={m.active ? "Pause" : "Resume"}
-                    onClick={() => updateMedication(m.id, { active: !m.active })}
-                  >
-                    <Power className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" title="Delete" onClick={() => deleteMedication(m.id)}>
-                    <Trash2 className="h-4 w-4 text-critical" />
-                  </Button>
-                </div>
+                {m.purpose && (
+                  <div className="rounded-md bg-primary/5 border border-primary/20 p-2 flex gap-2">
+                    <Info className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                    <p className="text-xs leading-relaxed">
+                      <span className="font-semibold">Why this medication: </span>
+                      {m.purpose}
+                    </p>
+                  </div>
+                )}
+                {m.missed_dose_instructions && (
+                  <div className="rounded-md bg-warning/5 border border-warning/20 p-2 flex gap-2">
+                    <AlertCircle className="h-3.5 w-3.5 text-warning shrink-0 mt-0.5" />
+                    <p className="text-xs leading-relaxed">
+                      <span className="font-semibold">If you miss a dose: </span>
+                      {m.missed_dose_instructions}
+                    </p>
+                  </div>
+                )}
               </div>
             ))}
           </CardContent>
@@ -313,7 +349,7 @@ export default function MedicationsPage() {
         </Card>
       </div>
 
-      <MedicationForm open={open} onOpenChange={setOpen} onSave={addMedication} />
+      <MedicationForm open={open} onOpenChange={setOpen} onSave={handleAdd} />
     </AppLayout>
   );
 }
