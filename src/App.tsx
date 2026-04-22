@@ -12,6 +12,7 @@ import EmergencyPage from "./pages/EmergencyPage.tsx";
 import MedicationsPage from "./pages/MedicationsPage.tsx";
 import SimulatorPage from "./pages/SimulatorPage.tsx";
 import VisualAnalysisPage from "./pages/VisualAnalysisPage.tsx";
+import FollowUpsPage from "./pages/FollowUpsPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/medications" element={<MedicationsPage />} />
             <Route path="/simulator" element={<SimulatorPage />} />
             <Route path="/visual-analysis" element={<VisualAnalysisPage />} />
+            <Route path="/follow-ups" element={<FollowUpsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
