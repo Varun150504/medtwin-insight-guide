@@ -114,8 +114,33 @@ export default function SimulatorPage() {
               </Select>
             </div>
 
-            <SliderField
-              label="Diet quality"
+            {medications.filter((m) => m.active).length > 0 && (
+              <div className="rounded-lg border bg-secondary/30 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold flex items-center gap-1.5">
+                    <Pill className="h-3.5 w-3.5 text-primary" />
+                    Current medications (factored in)
+                  </p>
+                  <span className="text-[10px] text-muted-foreground">
+                    Real adherence: {adherenceRate}%
+                  </span>
+                </div>
+                <ul className="space-y-1">
+                  {medications.filter((m) => m.active).map((m) => {
+                    const days = Math.max(0, Math.round((Date.now() - new Date(m.start_date).getTime()) / 86400000));
+                    return (
+                      <li key={m.id} className="text-xs text-muted-foreground flex items-center justify-between gap-2">
+                        <span className="truncate">
+                          <span className="font-medium text-foreground">{m.name}</span>
+                          {m.dosage ? ` · ${m.dosage}` : ""} · {m.times_per_day}×/day
+                        </span>
+                        <span className="text-[10px] shrink-0">{days}d on this med</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
               value={lifestyle.diet_quality}
               onChange={(v) => setLifestyle({ ...lifestyle, diet_quality: v })}
               min={1} max={10} step={1}
