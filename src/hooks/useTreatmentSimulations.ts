@@ -72,13 +72,15 @@ export const useTreatmentSimulations = () => {
   const runSimulation = async (
     condition: string,
     lifestyle: LifestyleInputs,
-    profile?: any
+    profile?: any,
+    medications?: any[],
+    adherence_summary?: { taken: number; total: number; rate: number } | null,
   ): Promise<{ data?: SimulationResult & { id: string }; error?: string }> => {
     if (!user) return { error: "Not authenticated" };
     setRunning(true);
     try {
       const { data, error } = await supabase.functions.invoke("treatment-simulate", {
-        body: { condition, lifestyle, profile },
+        body: { condition, lifestyle, profile, medications, adherence_summary },
       });
       if (error) return { error: error.message };
       if (data?.error) return { error: data.error };

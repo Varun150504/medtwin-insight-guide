@@ -16,6 +16,8 @@ export type Medication = {
   end_date: string | null;
   active: boolean;
   color: string | null;
+  purpose: string | null;
+  missed_dose_instructions: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -80,15 +82,46 @@ export function useMedications() {
     refresh();
   }, [refresh]);
 
-  const addMedication = async (input: Omit<Medication, "id" | "user_id" | "created_at" | "updated_at">) => {
+  const addMedication = async (
+    input: Omit<Medication, "id" | "user_id" | "created_at" | "updated_at" | "purpose" | "missed_dose_instructions">,
+  ): Promise<Medication | undefined> => {
     if (!user) return;
-    const { error } = await supabase.from("medications").insert({ ...input, user_id: user.id });
+    let purpose: string | null = null;
+    let missed: string | null = null;
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("chronic_conditions")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const { data: ctx } = await supabase.functions.invoke("medication-context", {
+        body: {
+          name: input.name,
+          dosage: input.dosage,
+          frequency: input.frequency,
+          conditions: profile?.chronic_conditions || [],
+        },
+      });
+      if (ctx && !ctx.error) {
+        purpose = ctx.purpose || null;
+        missed = ctx.missed_dose_instructions || null;
+      }
+    } catch (e) {
+      console.warn("AI context fetch failed", e);
+    }
+
+    const { data: inserted, error } = await supabase
+      .from("medications")
+      .insert({ ...input, user_id: user.id, purpose, missed_dose_instructions: missed })
+      .select()
+      .single();
     if (error) {
       toast.error("Failed to add medication");
       return;
     }
     toast.success(`${input.name} added`);
     refresh();
+    return inserted as Medication;
   };
 
   const updateMedication = async (id: string, patch: Partial<Medication>) => {

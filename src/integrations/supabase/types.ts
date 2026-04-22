@@ -44,6 +44,59 @@ export type Database = {
         }
         Relationships: []
       }
+      follow_ups: {
+        Row: {
+          context: string | null
+          created_at: string
+          id: string
+          last_checked_at: string | null
+          medication_id: string | null
+          messages: Json
+          next_check_at: string | null
+          status: string
+          subject: string
+          trigger_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          context?: string | null
+          created_at?: string
+          id?: string
+          last_checked_at?: string | null
+          medication_id?: string | null
+          messages?: Json
+          next_check_at?: string | null
+          status?: string
+          subject: string
+          trigger_type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          context?: string | null
+          created_at?: string
+          id?: string
+          last_checked_at?: string | null
+          medication_id?: string | null
+          messages?: Json
+          next_check_at?: string | null
+          status?: string
+          subject?: string
+          trigger_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follow_ups_medication_id_fkey"
+            columns: ["medication_id"]
+            isOneToOne: false
+            referencedRelation: "medications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       health_sessions: {
         Row: {
           condition: string | null
@@ -219,8 +272,10 @@ export type Database = {
           end_date: string | null
           frequency: string
           id: string
+          missed_dose_instructions: string | null
           name: string
           notes: string | null
+          purpose: string | null
           reminder_times: string[]
           start_date: string
           times_per_day: number
@@ -235,8 +290,10 @@ export type Database = {
           end_date?: string | null
           frequency?: string
           id?: string
+          missed_dose_instructions?: string | null
           name: string
           notes?: string | null
+          purpose?: string | null
           reminder_times?: string[]
           start_date?: string
           times_per_day?: number
@@ -251,8 +308,10 @@ export type Database = {
           end_date?: string | null
           frequency?: string
           id?: string
+          missed_dose_instructions?: string | null
           name?: string
           notes?: string | null
+          purpose?: string | null
           reminder_times?: string[]
           start_date?: string
           times_per_day?: number

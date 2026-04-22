@@ -6,21 +6,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Plus, X, Clock } from "lucide-react";
 
+type SaveData = {
+  name: string;
+  dosage: string | null;
+  frequency: string;
+  times_per_day: number;
+  reminder_times: string[];
+  notes: string | null;
+  start_date: string;
+  end_date: string | null;
+  active: boolean;
+  color: string | null;
+};
+
 type Props = {
   open: boolean;
   onOpenChange: (o: boolean) => void;
-  onSave: (data: {
-    name: string;
-    dosage: string | null;
-    frequency: string;
-    times_per_day: number;
-    reminder_times: string[];
-    notes: string | null;
-    start_date: string;
-    end_date: string | null;
-    active: boolean;
-    color: string | null;
-  }) => Promise<void> | void;
+  onSave: (data: SaveData) => Promise<unknown> | unknown;
 };
 
 export function MedicationForm({ open, onOpenChange, onSave }: Props) {

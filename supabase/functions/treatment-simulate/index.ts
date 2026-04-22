@@ -32,7 +32,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { condition, lifestyle, profile, baseline } = body;
+    const { condition, lifestyle, profile, baseline, medications, adherence_summary } = body;
 
     if (!condition || !lifestyle) {
       return new Response(JSON.stringify({ error: "Missing condition or lifestyle inputs" }), {
@@ -48,11 +48,24 @@ serve(async (req) => {
       ? `Patient: Age ${profile.age || "unknown"}, chronic conditions: ${(profile.chronic_conditions || []).join(", ") || "none"}.`
       : "";
 
+    const medsList = Array.isArray(medications) && medications.length > 0
+      ? medications.map((m: any) => {
+          const dur = m.start_date
+            ? `${Math.max(0, Math.round((Date.now() - new Date(m.start_date).getTime()) / (1000 * 60 * 60 * 24)))} days`
+            : "duration unknown";
+          return `- ${m.name}${m.dosage ? ` ${m.dosage}` : ""}, ${m.times_per_day || 1}x/day, taken for ${dur}${m.purpose ? ` (purpose: ${m.purpose})` : ""}`;
+        }).join("\n")
+      : "None reported.";
+
+    const adherenceContext = adherence_summary
+      ? `Real adherence (last 7 days): ${adherence_summary.taken}/${adherence_summary.total} doses taken (${adherence_summary.rate}%).`
+      : "";
+
     const systemPrompt = `You are MedTwin AI's chronic-disease lifestyle simulator. You model how lifestyle changes affect health metrics over time for chronic conditions.
 
-You receive: a condition (e.g. type 2 diabetes, hypertension, heart disease), lifestyle inputs (diet quality 1-10, exercise minutes/week, medication adherence %, sleep hours/night, stress level 1-10), and optionally baseline metrics.
+You receive: a condition (e.g. type 2 diabetes, hypertension, heart disease), lifestyle inputs (diet quality 1-10, exercise minutes/week, medication adherence %, sleep hours/night, stress level 1-10), the patient's CURRENT MEDICATIONS (drug, dose, frequency, duration), real adherence data, and optionally baseline metrics.
 
-You must produce a realistic 12-month projection grounded in established medical literature. Project the most relevant clinical metrics for the condition (e.g. HbA1c & weight for diabetes, systolic BP & LDL for hypertension/heart disease).
+You MUST factor in expected pharmacological effect of each medication on the condition (e.g. metformin lowers HbA1c ~1-1.5% over 3 months; ACE inhibitors lower SBP ~10mmHg; statins lower LDL ~30-50%). Combine medication effect with lifestyle change effects realistically — don't double-count benefits. If real adherence is poor, dampen expected medication benefit accordingly. Project the most relevant clinical metrics for the condition (e.g. HbA1c & weight for diabetes, systolic BP & LDL for hypertension/heart disease).
 
 Respond ONLY with valid JSON, no markdown:
 {
@@ -84,6 +97,11 @@ Be realistic — small lifestyle changes produce small effects. Bad habits worse
     const userPrompt = `${profileContext}
 
 Condition: ${condition}
+
+Current medications:
+${medsList}
+
+${adherenceContext}
 
 Lifestyle inputs:
 - Diet quality: ${lifestyle.diet_quality}/10
