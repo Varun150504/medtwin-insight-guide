@@ -141,6 +141,9 @@ export default function SimulatorPage() {
                 </ul>
               </div>
             )}
+
+            <SliderField
+              label="Diet quality"
               value={lifestyle.diet_quality}
               onChange={(v) => setLifestyle({ ...lifestyle, diet_quality: v })}
               min={1} max={10} step={1}
