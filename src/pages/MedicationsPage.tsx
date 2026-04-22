@@ -27,7 +27,30 @@ export default function MedicationsPage() {
     deleteMedication,
     recordDose,
   } = useMedications();
+  const { startFollowUp } = useFollowUps();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+
+  const handleAdd = async (data: Parameters<typeof addMedication>[0]) => {
+    const created = await addMedication(data);
+    if (created) {
+      toast("Start an AI check-in to track tolerance & side effects?", {
+        action: {
+          label: "Start",
+          onClick: async () => {
+            const fu = await startFollowUp(
+              `New medication: ${created.name}`,
+              "new_medication",
+              `Patient just started ${created.name}${created.dosage ? ` (${created.dosage})` : ""}, ${created.times_per_day}x/day. ${created.purpose || ""}`,
+              created.id,
+            );
+            if (fu) navigate("/follow-ups");
+          },
+        },
+        duration: 8000,
+      });
+    }
+  };
 
   // Browser reminder notifications: fire when scheduled time hits and dose still pending
   useEffect(() => {
