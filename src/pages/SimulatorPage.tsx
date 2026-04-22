@@ -11,7 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useTreatmentSimulations, LifestyleInputs, SimulationResult } from "@/hooks/useTreatmentSimulations";
-import { Activity, TrendingUp, TrendingDown, Minus, Sparkles, Target, AlertTriangle, Trash2, FlaskConical } from "lucide-react";
+import { useMedications } from "@/hooks/useMedications";
+import { Activity, TrendingUp, TrendingDown, Minus, Sparkles, Target, AlertTriangle, Trash2, FlaskConical, Pill } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
 
@@ -32,6 +33,7 @@ const trendColors = { improving: "text-success", worsening: "text-critical", sta
 export default function SimulatorPage() {
   const { user, loading: authLoading } = useAuth();
   const { simulations, running, runSimulation, deleteSimulation } = useTreatmentSimulations();
+  const { medications, adherenceRate, logs } = useMedications();
 
   const [condition, setCondition] = useState(CONDITIONS[0]);
   const [lifestyle, setLifestyle] = useState<LifestyleInputs>({
@@ -49,7 +51,22 @@ export default function SimulatorPage() {
   if (!user) return <AuthPage />;
 
   const handleRun = async () => {
-    const { data, error } = await runSimulation(condition, lifestyle);
+    const activeMeds = medications.filter((m) => m.active).map((m) => ({
+      name: m.name,
+      dosage: m.dosage,
+      times_per_day: m.times_per_day,
+      start_date: m.start_date,
+      purpose: m.purpose,
+    }));
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const recent = logs.filter((l) => new Date(l.scheduled_for) >= sevenDaysAgo);
+    const taken = recent.filter((l) => l.status === "taken").length;
+    const adherence_summary = recent.length
+      ? { taken, total: recent.length, rate: Math.round((taken / recent.length) * 100) }
+      : null;
+
+    const { data, error } = await runSimulation(condition, lifestyle, undefined, activeMeds, adherence_summary);
     if (error) {
       toast.error(error);
       return;
