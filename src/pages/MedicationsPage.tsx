@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useMedications } from "@/hooks/useMedications";
+import { useFollowUps } from "@/hooks/useFollowUps";
 import { MedicationForm } from "@/components/MedicationForm";
-import { Pill, Plus, Check, X, Clock, Trash2, Bell, TrendingUp, Power } from "lucide-react";
+import { Pill, Plus, Check, X, Clock, Trash2, Bell, TrendingUp, Power, Info, AlertCircle, MessageCircle } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 export default function MedicationsPage() {
   const { user, loading: authLoading } = useAuth();
